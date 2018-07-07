@@ -70,7 +70,6 @@ app.post('/webhook', function (req, res) {
                             paramName = Object.keys(param).map(function (value, index) {
                                 value.index = index;
                                 return value;
-                                
                             });
                             paramValue = Object.keys(param).map(function (key) {
                                 return param[key];
