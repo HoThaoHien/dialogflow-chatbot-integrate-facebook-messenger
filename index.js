@@ -3,9 +3,11 @@ const FACEBOOK_ACCESS_TOKEN = 'EAACQrYT69OEBAOn9CbTVRNUGmUVpEuI3nbHFLtZBLfnrvaz5
 const apiAiClient = require('apiai')(API_AI_TOKEN);
 const db = require('./database');
 
+var fs = require('fs');
 var google = require('google');
 var logger = require('morgan');
 var http = require('http');
+// var https = require('https');
 var bodyParser = require('body-parser');
 var express = require('express');
 var app = express();
@@ -37,7 +39,9 @@ var studentId = ''
 var subject = ''
 var actionIsCompleted = true
 var payload = 'Ok'
-intentName
+rootLink_LICH_THI_KET_QUA_THI = 'http://ktdbcl.hcmus.edu.vn/index.php/component/search/?searchword=KEYWORD&ordering=newest&searchphrase=all&limit=10'
+rootLink_THOI_KHOA_BIEU_HOC_BONG_TOT_NGHIEP = 'https://www.hcmus.edu.vn/component/search/?searchword=KEYWORD&ordering=newest&searchphrase=all&limit=10'
+
 
 app.get('/webhook', function (req, res) {
     const hubChallenge = req.query['hub.challenge'];
@@ -70,7 +74,6 @@ app.post('/webhook', function (req, res) {
                             paramName = Object.keys(param).map(function (value, index) {
                                 value.index = index;
                                 return value;
-                                
                             });
                             paramValue = Object.keys(param).map(function (key) {
                                 return param[key];
@@ -103,7 +106,6 @@ app.post('/webhook', function (req, res) {
                 checkMustFinishSubject(senderId, paramName, paramValue, payload)
                 // doAction(senderId, paramName, paramValue, message.postback.payload)
 
-                if (payload )
             }
         }
     }
@@ -181,26 +183,10 @@ function sendPayloadToUser(senderId, attachment) {
     });
 }
 
-function sendPayloadToUserBeforeAction(senderId, attachment, callback) {
-    request({
-        url: 'https://graph.facebook.com/v2.6/me/messages',
-        qs: {
-            access_token: FACEBOOK_ACCESS_TOKEN
-        },
-        method: 'POST',
-        json: {
-            recipient: {
-                id: senderId
-            },
-            message: {
-                attachment
-            },
-        }
-    }, callback);
-}
 
 google.resultsPerPage = 1
-google.timeSpan = 'm'
+google.timeSpan = ''
+
 
 function confirmActionInfo(senderId, studentId, subject) {
     sendPayloadToUser(senderId, {
@@ -226,55 +212,6 @@ function confirmActionInfo(senderId, studentId, subject) {
             ]
         }
     })
-}
-
-function sendDashboardList (senderId){
-    sendPayloadToUserBeforeAction(senderId, {
-            "type":"template",
-            "payload":{
-              "template_type":"generic",
-              "elements":[
-                 {
-                  "title":"Thông tin về môn học",
-                  "subtitle":"Những thông tin về môn học cần học trước, môn học tương đương hay nội dung môn học.",
-                  "buttons":[
-                    {
-                        "type": "postback",
-                        "title": "Môn học tiên quyết",
-                        "payload": "mon_hoc_truoc"
-                    },
-                    {
-                        "type": "postback",
-                        "title": "Môn học tương đương",
-                        "payload": "mon_hoc_thay_the"
-                    },
-                    {
-                        "type": "postback",
-                        "title": "Nội dung môn học",
-                        "payload": "noi_dung_mon_hoc"
-                    }
-                  ]      
-                },
-
-                {
-                    "title":"Thông tin về chuyên ngành",
-                    "subtitle":"Những thông tin về các ngành học của khoa hoặc những môn bắt buộc/tự chọn của chuyên ngành mà bạn theo học.",
-                    "buttons":[
-                      {
-                          "type": "postback",
-                          "title": "Ngành học",
-                          "payload": "so_luong_mon_hoc_chuyen_nganh"
-                      },
-                      {
-                          "type": "postback",
-                          "title": "Môn học của ngành học",
-                          "payload": "so_luong_chuyen_nganh"
-                      }
-                    ]      
-                  }
-              ]
-            }
-          }, function() {sendTextMessageToUser(senderId, 'Ngoài ra mình còn có thể giúp bạn đăng ký môn học và tìm kiếm các thông tin như kết quả thi, lịch thi, thời khóa biểu, học bổng, tài liệu môn học, thông tin tốt nghiệp và bài tập.')}) 
 }
 
 
@@ -321,11 +258,11 @@ function replaceParamValueInProcedure(sqlString, paramName, paramValue) {
 }
 
 function sendGoogleSearchWithQueryToUser(senderId, keyWords) {
-    console.log (keyWords)
+    console.log(keyWords)
     google(keyWords, function (err, res) {
         if (err) throw err
         if (res.links.length === 0) {
-            sendTextMessageToUser(senderId, 'Xin lỗi, tôi không tìm thấy câu trả lời cho câu hỏi của bạn, tôi rất lấy làm tiếc!');
+            sendTextMessageToUser(senderId, '');
         } else {
             for (i = 0; i < res.links.length; i++) {
                 sendTextMessageToUser(senderId, res.links[i].href);
@@ -336,7 +273,6 @@ function sendGoogleSearchWithQueryToUser(senderId, keyWords) {
     })
 }
 
-
 async function sendGoogleSearchWithParamValueToUser(senderId, paramValue) {
     keyWords = ''
     await paramValue.forEach(function (value) {
@@ -346,10 +282,10 @@ async function sendGoogleSearchWithParamValueToUser(senderId, paramValue) {
     });
     console.log(keyWords)
     if (keyWords !== '') {
-        google(keyWords + ' site:hcmus.edu.vn', function (err, res) {
+        google(keyWords + ' khtn', function (err, res) {
             if (err) throw err
             if (res.links.length === 0) {
-                sendTextMessageToUser(senderId, 'Xin lỗi, tôi không tìm thấy câu trả lời cho câu hỏi của bạn, tôi rất lấy làm tiếc!');
+                sendTextMessageToUser(senderId, '');
             } else {
                 for (i = 0; i < res.links.length; i++) {
                     sendTextMessageToUser(senderId, res.links[i].href);
@@ -403,22 +339,27 @@ function responseToUser(senderId, response) {
                     switch (row.intentType) {
                         //----------------------------------------------------
                         case 1:
-                            if (intentName === 'chao_hoi'){
-                                console.log ('intent Name lúc này là :  ', intentName, senderId);
-                                sendDashboardList(senderId)
+                            if (intentName === 'chao_hoi') {
+                                console.log('intent Name lúc này là :  ', intentName, senderId);
+                                sendTextMessageToUser(senderId, 'Hiện tại các nội dung mà mình có thể hỗ trợ là: \n- Đăng ký môn học \n- Tìm môn hay tiên quyết/tương đương cho một môn học. \n- Môn học tự chọn/chuyên ngành của một chuyên ngành \n- Cho biết nội dung môn học \n- Hỗ trợ tìm kiếm các thông tin khác về lịch thi, kết quả thi, thời khóa biểu, học bổng, tài liệu môn học và bài tập.')
                             }
                             break
                         case 2:
                             console.log('TRƯỜNG HỢP 2')
-                            sendGoogleSearchWithParamValueToUser(senderId, paramValue)
-                            sendGoogleSearchWithQueryToUser(senderId, resolvedQuery + ' site:hcmus.edu.vn')
+                            if (intentName === 'lich_thi'  || intentName === 'ket_qua_thi'){
+                                sendSearchResult(rootLink_LICH_THI_KET_QUA_THI,senderId, paramValue, 'http://ktdbcl.hcmus.edu.vn/','%20', /attachments\/article\/((.*?))>/gi)
+                            }
+                            if (intentName === 'thoi_khoa_bieu' || intentName === 'hoc_bong' || intentName === 'tot_nghiep'){
+                                sendSearchResult(rootLink_THOI_KHOA_BIEU_HOC_BONG_TOT_NGHIEP,senderId, paramValue, 'https://www.hcmus.edu.vn/','%20', /component\/sppagebuilder\/((.*?))>/gi)
+                            }
+                            setTimeout(sendTextMessageToUser, 10000, senderId, 'Bạn có muốn hỏi câu hỏi hay yêu cầu nào khác không?');
                             break;
                             //------------------------------------------------------
                         case 3:
                             console.log('TRƯỜNG HỢP 3')
                             sendGoogleSearchWithParamValueToUser(senderId, paramValue)
                             sendGoogleSearchWithQueryToUser(senderId, resolvedQuery)
-                            // setTimeout(sendTextMessageToUser, 50000, senderId, 'Bạn có muốn hỏi câu hỏi hay yêu cầu nào khác không?'); 
+                            setTimeout(sendTextMessageToUser, 10000, senderId, 'Bạn có muốn hỏi câu hỏi hay yêu cầu nào khác không?');
                             break;
                         case 4:
                             db.query(replaceParamValueInQuery(row.res, paramName, paramValue), function (err, results) {
@@ -428,6 +369,7 @@ function responseToUser(senderId, response) {
                                 if (results.length === 0) {
                                     console.log('TRƯỜNG HỢP 4.1 - KO CO KQ')
                                     sendTextMessageToUser(senderId, 'Xin lỗi nhưng hiện tại hệ thống chưa có thông tin bạn cần tìm kiếm.');
+                                    setTimeout(sendTextMessageToUser, 10000, senderId, 'Bạn có muốn hỏi câu hỏi hay yêu cầu nào khác không?');
 
                                 } else {
                                     console.log('TRƯỜNG HỢP 4.2 - CO KET QUA')
@@ -443,11 +385,12 @@ function responseToUser(senderId, response) {
                                         sendTextMessageToUser(senderId, dbResult);
 
                                     })
+                                    setTimeout(sendTextMessageToUser, 10000, senderId, 'Bạn có muốn hỏi câu hỏi hay yêu cầu nào khác không?');
                                 }
                             })
                             break;
-                        // case 5:
-                            // confirmActionInfo(senderId, response.result.parameters['ma_so_sinh_vien'], response.result.parameters['ten_mon_hoc'])
+                        case 5:
+                            confirmActionInfo(senderId, response.result.parameters['ma_so_sinh_vien'], response.result.parameters['ten_mon_hoc'])
                     }
                 });
 
@@ -455,11 +398,10 @@ function responseToUser(senderId, response) {
         })
     } else {
         console.log("TRƯỜNG HỢP 1")
-        if (intentName === 'chao_hoi'){
-            console.log ('intent Name lúc này là :  ', intenName);
+        if (intentName === 'chao_hoi') {
+            console.log('intent Name lúc này là :  ', intenName);
             sendDashboardList(senderId)
-        }
-        else{
+        } else {
             sendTextMessageToUser(senderId, paramMessage);
         }
     }
@@ -467,10 +409,10 @@ function responseToUser(senderId, response) {
 
 function doAction(senderId, paramName, paramValue, payload) {
     //Thực hiện hành động
-    console.log ('payload ở đây: ', payload)
+    console.log('payload ở đây: ', payload)
     if (payload === 'Ok') {
         // checkMustFinishSubject(senderId)
-        if (actionIsCompleted === false){
+        if (actionIsCompleted === false) {
             var sql = "select response as res from intent_response where intent = ?";
             db.query(sql, [intentName], function (err, response) {
                 if (err) throw err;
@@ -518,32 +460,33 @@ function doAction(senderId, paramName, paramValue, payload) {
     }
 }
 
-function checkMustFinishSubject(senderId, paramName, paramValue, payload){
+function checkMustFinishSubject(senderId, paramName, paramValue, payload) {
     console.log('vô đây')
     sql = "select mht.monhoctruoc from monhoctruoc as mht where mht.monhoc = (select mh.id from monhoc as mh where mh.tenmonhoc like ?) and mht.monhoctruoc not in (select monhoc from sinhvien_monhoc where sinhvien = ?)"
-    db.query(sql,[subject, studentId], function (err, sqlResponseRegistedSubject) {
+    db.query(sql, [subject, studentId], function (err, sqlResponseRegistedSubject) {
         if (err) throw err;
-        if (sqlResponseRegistedSubject.length === 0){
+        if (sqlResponseRegistedSubject.length === 0) {
             console.log('vô đây 1')
             actionIsCompleted = false
-            doAction(senderId,paramName, paramValue, payload)
-        }
-        else {
+            doAction(senderId, paramName, paramValue, payload)
+        } else {
             console.log('vô đây 2')
+
             Object.keys(sqlResponseRegistedSubject).map(function (key) {
                 var rowRegistedSubject = sqlResponseRegistedSubject[key];
-                Object.keys(sqlResponseRegistedSubject).forEach(function (key) {
-                    rowRegistedSubject = sqlResponseRegistedSubject[key]
-                    var temp = Object.keys(rowRegistedSubject).map(function (key) {
-                        return rowRegistedSubject[key];
-                    })
-                    dbResult = ""
-                    sendTextMessageToUserBeforeAction(senderId, 'Bạn cần phải học môn sau đây trước khi đăng ký được môn này', function (){
+                sendTextMessageToUserBeforeAction(senderId, 'Bạn cần phải học môn sau đây trước khi đăng ký được môn này', function () {
+                    Object.keys(sqlResponseRegistedSubject).forEach(function (key) {
+                        rowRegistedSubject = sqlResponseRegistedSubject[key]
+                        var temp = Object.keys(rowRegistedSubject).map(function (key) {
+                            return rowRegistedSubject[key];
+                        })
+                        dbResult = ""
+
                         temp.forEach(function (field) {
                             //voi moi
-                            console.log ('field: ', field)
+                            console.log('field: ', field)
                             sql = "	select mh.tenmonhoc from monhoc as mh where mh.id = ?"
-                            db.query(sql,[field], function (err, sqlResponseMustFinishSubject) {
+                            db.query(sql, [field], function (err, sqlResponseMustFinishSubject) {
                                 if (err) throw err;
                                 Object.keys(sqlResponseMustFinishSubject).map(function (key) {
                                     var rowMustFinishSubject = sqlResponseMustFinishSubject[key];
@@ -557,30 +500,66 @@ function checkMustFinishSubject(senderId, paramName, paramValue, payload){
                                             dbResult += field;
                                             console.log(field)
                                         })
-                                        
+
                                         sendTextMessageToUser(senderId, dbResult);
-        
+
                                     })
                                 })
                             })
                         })
+
+
                     })
-                   
                 })
             })
+
         }
 
     })
+}
 
-
-
-
-    
-
-
-
-
-
+async function sendSearchResult(rootLink,senderId, paramValue, host, replaceSpaceCharacter, regrex) {
+    var keyWords = ''
+    await paramValue.forEach(function (value) {
+        if (value !== '') {
+            keyWords += value + ' '
+        }
+        keyWords = keyWords.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+        keyWords = keyWords.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+        keyWords = keyWords.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+        keyWords = keyWords.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+        keyWords = keyWords.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+        keyWords = keyWords.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+        keyWords = keyWords.replace(/đ/g, "d");
+        keyWords = keyWords.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+        keyWords = keyWords.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+        keyWords = keyWords.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+        keyWords = keyWords.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+        keyWords = keyWords.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+        keyWords = keyWords.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
+        keyWords = keyWords.replace(/Đ/g, "D");
+        keyWords = keyWords.replace(' ', replaceSpaceCharacter)
+    });
+    if (keyWords !== '') {
+        console.log('key1', keyWords)
+        request(rootLink.replace('KEYWORD', keyWords).replace(' ', replaceSpaceCharacter), function (error, response, body) {
+            console.log ('link gốcàđá: ', rootLink.replace('KEYWORD', keyWords).replace(' ', replaceSpaceCharacter))
+            if (body !== null){
+                console.log (regrex)
+                var links = body.match(regrex);
+                console.log (body)
+                if (links !== null){
+                    console.log(host + links[0] .replace('"',''))
+                    sendTextMessageToUser(senderId, host + links[0] .replace('">',''))
+                    sendTextMessageToUser(senderId, host + links[1] .replace('">',''))
+                }
+                else {
+                    sendTextMessageToUser(senderId,rootLink.replace('KEYWORD', keyWords).replace(' ', replaceSpaceCharacter))
+                }
+            }
+           
+        });
+    }
 }
 
 // app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || 8080);
