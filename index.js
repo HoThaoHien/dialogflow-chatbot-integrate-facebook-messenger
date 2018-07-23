@@ -44,7 +44,7 @@ var rootLink_THOI_KHOA_BIEU_HOC_BONG_TOT_NGHIEP = 'https://www.hcmus.edu.vn/comp
 app.get('/webhook', function (req, res) {
     const hubChallenge = req.query['hub.challenge'];
     const hubMode = req.query['hub.mode'];
-    const verifyTokenMatches = (req.query['hub.verify_token'] === 'rukawa10051996');
+    const verifyTokenMatches = (req.query['hub.verify_token'] === 'FACEBOOK_VERIFY_TOKEN');
     if (hubMode && verifyTokenMatches) {
         res.status(200).send(hubChallenge);
     } else {
