@@ -7,7 +7,6 @@ var fs = require('fs');
 var google = require('google');
 var logger = require('morgan');
 var http = require('http');
-// var https = require('https');
 var bodyParser = require('body-parser');
 var express = require('express');
 var app = express();
@@ -23,7 +22,6 @@ app.get('/', (req, res) => {
     res.send("Home page. Server running okay.");
 });
 
-
 app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || 8080);
 app.set('ip', process.env.OPENSHIFT_NODEJS_IP || process.env.IP || "127.0.0.1");
 
@@ -31,7 +29,7 @@ server.listen(app.get('port'), app.get('ip'), function () {
     console.log("Chat bot server listening at %s:%d ", app.get('ip'), app.get('port'));
 });
 
-// Xử lý tin nhắn người dùng và trả kết quả.
+// Global variable
 var paramName = {}
 var paramValue = {}
 var param = {}
@@ -39,8 +37,8 @@ var studentId = ''
 var subject = ''
 var actionIsCompleted = true
 var payload = 'Ok'
-rootLink_LICH_THI_KET_QUA_THI = 'http://ktdbcl.hcmus.edu.vn/index.php/component/search/?searchword=KEYWORD&ordering=newest&searchphrase=all&limit=10'
-rootLink_THOI_KHOA_BIEU_HOC_BONG_TOT_NGHIEP = 'https://www.hcmus.edu.vn/component/search/?searchword=KEYWORD&ordering=newest&searchphrase=all&limit=10'
+var rootLink_LICH_THI_KET_QUA_THI = 'http://ktdbcl.hcmus.edu.vn/index.php/component/search/?searchword=KEYWORD&ordering=newest&searchphrase=all&limit=10'
+var rootLink_THOI_KHOA_BIEU_HOC_BONG_TOT_NGHIEP = 'https://www.hcmus.edu.vn/component/search/?searchword=KEYWORD&ordering=newest&searchphrase=all&limit=10'
 
 
 app.get('/webhook', function (req, res) {
@@ -61,12 +59,15 @@ app.post('/webhook', function (req, res) {
         var messaging = entry.messaging;
         for (var message of messaging) {
             var senderId = message.sender.id;
+            // If the event send to webhook is a text message
             if (message.message) {
                 if (message.message.text) {
                     if (actionIsCompleted) {
+                        // Send text message to Dialogflow to analyze
                         const apiaiSession = apiAiClient.textRequest(message.message.text, {
                             sessionId: 'rukawa10051996'
                         });
+                        // Get response from Dialogflow and process
                         apiaiSession.on('response', (response) => {
                             param = response.result.parameters
                             studentId = param['ma_so_sinh_vien']
@@ -97,14 +98,15 @@ app.post('/webhook', function (req, res) {
                     }
 
                 }
-            } else if (message.postback && message.postback.payload) {
+            } 
+            // If the event sent to webhook is a payload
+            else if (message.postback && message.postback.payload) {
                 payload = message.postback.payload;
                 if (!actionIsCompleted) {
                     paramValue[paramName.indexOf('ma_so_sinh_vien')] = studentId
                     paramValue[paramName.indexOf('ten_mon_hoc')] = subject
                 }
                 checkMustFinishSubject(senderId, paramName, paramValue, payload)
-                // doAction(senderId, paramName, paramValue, message.postback.payload)
 
             }
         }
@@ -112,6 +114,7 @@ app.post('/webhook', function (req, res) {
     res.status(200).send("OK");
 });
 
+//Send text message to user without callback
 function sendTextMessageToUser(senderId, text) {
     request({
         url: 'https://graph.facebook.com/v2.6/me/messages',
@@ -130,6 +133,7 @@ function sendTextMessageToUser(senderId, text) {
     });
 }
 
+// Send text messsage with callback
 function sendTextMessageToUserBeforeAction(senderId, text, callback) {
     request({
         url: 'https://graph.facebook.com/v2.6/me/messages',
@@ -148,6 +152,7 @@ function sendTextMessageToUserBeforeAction(senderId, text, callback) {
     }, callback)
 }
 
+// Send typing action to user
 function sendTypingActionToUser(senderId, response, callback) {
     request({
         url: 'https://graph.facebook.com/v2.6/me/messages',
@@ -165,6 +170,7 @@ function sendTypingActionToUser(senderId, response, callback) {
     callback(senderId, response)
 }
 
+// Send payload to user
 function sendPayloadToUser(senderId, attachment) {
     request({
         url: 'https://graph.facebook.com/v2.6/me/messages',
@@ -184,10 +190,8 @@ function sendPayloadToUser(senderId, attachment) {
 }
 
 
-google.resultsPerPage = 1
-google.timeSpan = ''
 
-
+// Send payload to confirm register action
 function confirmActionInfo(senderId, studentId, subject) {
     sendPayloadToUser(senderId, {
         "type": "template",
@@ -214,7 +218,7 @@ function confirmActionInfo(senderId, studentId, subject) {
     })
 }
 
-
+// Replace sympolic parameter in the query with real parameter get from Dialogflow
 function replaceParamValueInQuery(sqlString, paramName, paramValue) {
     for (i = 0; i < paramName.length; i++) {
         if (paramValue[i] === 'undefined' || paramValue[i] === '') {
@@ -240,6 +244,7 @@ function replaceParamValueInQuery(sqlString, paramName, paramValue) {
     return sqlString
 }
 
+// Replace sympolic parameter in the procedure with real parameter get from Dialogflow
 function replaceParamValueInProcedure(sqlString, paramName, paramValue) {
     for (i = 0; i < paramName.length; i++) {
         if (paramValue[i] === 'undefined' || paramValue[i] === '') {
@@ -257,6 +262,11 @@ function replaceParamValueInProcedure(sqlString, paramName, paramValue) {
     return sqlString
 }
 
+
+google.resultsPerPage = 1
+google.timeSpan = ''
+
+// Using user sentence as a keyword to search on Google
 function sendGoogleSearchWithQueryToUser(senderId, keyWords) {
     console.log(keyWords)
     google(keyWords, function (err, res) {
@@ -273,6 +283,7 @@ function sendGoogleSearchWithQueryToUser(senderId, keyWords) {
     })
 }
 
+// Linking param values get from Dialogflow and using this as a keyword to search 
 async function sendGoogleSearchWithParamValueToUser(senderId, paramValue) {
     keyWords = ''
     await paramValue.forEach(function (value) {
@@ -297,6 +308,11 @@ async function sendGoogleSearchWithParamValueToUser(senderId, paramValue) {
     }
 }
 
+// Case 1: return fixed  answers get from Dialogflow
+// Case 2: return searched results get from fixed website
+// Case 3: return searched result get from G
+// Case 4: return answers from DB
+// Case 5: do an action (register action)
 function responseToUser(senderId, response) {
     //--------------------------------------------------------------------------------------
     console.log('ID LA: ', senderId)
@@ -407,11 +423,9 @@ function responseToUser(senderId, response) {
     }
 }
 
+// Do an action (register action)
 function doAction(senderId, paramName, paramValue, payload) {
-    //Thực hiện hành động
-    console.log('payload ở đây: ', payload)
     if (payload === 'Ok') {
-        // checkMustFinishSubject(senderId)
         if (actionIsCompleted === false) {
             var sql = "select response as res from intent_response where intent = ?";
             db.query(sql, [intentName], function (err, response) {
@@ -419,7 +433,6 @@ function doAction(senderId, paramName, paramValue, payload) {
                 Object.keys(response).map(function (key) {
                     var row = response[key];
                     console.log('TRƯỜNG HỢP 5')
-                    //thực hiện hành động
                     db.query(replaceParamValueInProcedure(row.res, paramName, paramValue), function (err, results) {
                         console.log('row.res', row.res)
                         console.log('row response: ', response)
@@ -448,18 +461,19 @@ function doAction(senderId, paramName, paramValue, payload) {
         actionIsCompleted = true
         previousSubject = subject
     }
-    //Hỏi lại mã số sinh viên
+    // Asking thstudent ID
     else if (payload === 'wrongStudentId') {
         actionIsCompleted = false
         sendTextMessageToUser(senderId, 'Mã số sinh viên đúng của bạn là gì?');
     }
-    //Hỏi lại tên môn học
+    //Asking the subject
     else if (payload === 'wrongSubject') {
         actionIsCompleted = false
         sendTextMessageToUser(senderId, 'Bạn vui lòng cho mình biết tên môn học chính xác. (Ví dụ: Cơ sở dữ liệu)');
     }
 }
 
+// Checking if a student finished prerequisite subjects before registering a new subject
 function checkMustFinishSubject(senderId, paramName, paramValue, payload) {
     console.log('vô đây')
     sql = "select mht.monhoctruoc from monhoctruoc as mht where mht.monhoc = (select mh.id from monhoc as mh where mh.tenmonhoc like ?) and mht.monhoctruoc not in (select monhoc from sinhvien_monhoc where sinhvien = ?)"
@@ -518,7 +532,8 @@ function checkMustFinishSubject(senderId, paramName, paramValue, payload) {
     })
 }
 
-async function sendSearchResult(rootLink,senderId, paramValue, host, replaceSpaceCharacter, regrex) {
+// Sending search results from fixed websites
+async function sendSearchResult(rootLink, senderId, paramValue, host, replaceSpaceCharacter, regrex) {
     var keyWords = ''
     await paramValue.forEach(function (value) {
         if (value !== '') {
@@ -543,7 +558,7 @@ async function sendSearchResult(rootLink,senderId, paramValue, host, replaceSpac
     if (keyWords !== '') {
         console.log('key1', keyWords)
         request(rootLink.replace('KEYWORD', keyWords).replace(' ', replaceSpaceCharacter), function (error, response, body) {
-            console.log ('link gốcàđá: ', rootLink.replace('KEYWORD', keyWords).replace(' ', replaceSpaceCharacter))
+            console.log ('link: ', rootLink.replace('KEYWORD', keyWords).replace(' ', replaceSpaceCharacter))
             if (body !== null){
                 console.log (regrex)
                 var links = body.match(regrex);
