@@ -1,5 +1,5 @@
 const API_AI_TOKEN = 'YOUR_DIALOG_FLOW_TOKEN';
-const FACEBOOK_ACCESS_TOKEN = 'YOUR_FACEBOOK_P_ACCESS_TOKEN';
+const FACEBOOK_ACCESS_TOKEN = 'YOUR_FACEBOOK_PAGE_ACCESS_TOKEN';
 const apiAiClient = require('apiai')(API_AI_TOKEN);
 const db = require('./database');
 
