@@ -9,11 +9,11 @@
 
      Run server  
      
-        ```npm install -g nodemon```
+        npm install -g nodemon
 
-        ```npm install```
+        npm install
 
-        ```nodemon index.js```
+        nodemon index.js
 
 
 - **Setting webhook**
