@@ -1,4 +1,4 @@
-# Education Chatbot (Dialogflow + Facebook messenger) 
+# Education Chatbot (Dialogflow + Facebook Messenger) 
 
 - **Create a facebook page and a facebook application.**  Linking the facebook application with the facebook page to get page access token 
 - **Create an agent on Dialogflow with ```agent.zip``` file in agent folder.** 
